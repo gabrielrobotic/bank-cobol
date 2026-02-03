@@ -16,7 +16,7 @@
       onCreate = {
         default.openFiles = [ ".idx/dev.nix" "README.md" ];
 
-        ohmyzsh-setup = ''
+        zsh_cobol-setup = ''
           echo "Verificando Oh My Zsh..."
 
           export RUNZSH=no
@@ -36,9 +36,7 @@
             echo "Inserindo ZSH_DISABLE_COMPFIX=true..."
             sed -i '/^source \$ZSH\/oh-my-zsh.sh/i ZSH_DISABLE_COMPFIX=true' "$ZSHRC"
           fi
-        '';
 
-        cobol-setup = ''
           echo "🔧 Configurando GnuCOBOL no ambiente..."
 
           # Garantir HOME válido (evita warnings estranhos)
