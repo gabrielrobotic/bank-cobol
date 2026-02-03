@@ -2,6 +2,7 @@
   channel = "stable-25.05";
   packages = with pkgs; [
     zsh
+    gnu-cobol
   ];
   env = { };
   idx = {
@@ -17,8 +18,17 @@
         default.openFiles = [ ".idx/dev.nix" "README.md" ];
 
         zsh_cobol-setup = ''
-          echo "Verificando Oh My Zsh..."
+          echo "🔧 Inicializando ambiente Zsh + GnuCOBOL"
 
+          # --- Garantir HOME consistente ---
+          if [ -z "$HOME" ] || [ ! -d "$HOME" ]; then
+            export HOME="/home/user"
+          fi
+
+          echo "HOME = $HOME"
+          ls -ld "$HOME" || true
+
+          # --- Oh My Zsh ---
           export RUNZSH=no
           export CHSH=no
 
@@ -26,56 +36,39 @@
           ZSHRC="$HOME/.zshrc"
 
           if [ ! -d "$OHMYZSH" ]; then
-            echo "Oh My Zsh não encontrado. Instalando..."
+            echo "Instalando Oh My Zsh..."
 
             sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
 
-            echo "Configurando tema 'jonathan'..."
             sed -i 's/ZSH_THEME=".*"/ZSH_THEME="jonathan"/' "$ZSHRC"
-
-            echo "Inserindo ZSH_DISABLE_COMPFIX=true..."
             sed -i '/^source \$ZSH\/oh-my-zsh.sh/i ZSH_DISABLE_COMPFIX=true' "$ZSHRC"
           fi
 
-          echo "🔧 Configurando GnuCOBOL no ambiente..."
-
-          # Garantir HOME válido (evita warnings estranhos)
-          if [ -z "$HOME" ]; then
-            export HOME="/home/user"
-          fi
-
-          echo "HOME = $HOME"
-
-          # Instalar GnuCOBOL se não existir
-          if ! command -v cobc >/dev/null 2>&1; then
-            echo "GnuCOBOL não encontrado. Instalando via apt-get..."
-
-            sudo apt-get update
-            sudo apt-get install -y gnucobol
-          else
-            echo "GnuCOBOL já instalado."
-          fi
-
-          # Garantir que o PATH esteja correto no zsh
-          ZSHRC="$HOME/.zshrc"
-
-          if ! grep -q "GnuCOBOL" "$ZSHRC"; then
-            echo "Exportando PATH do GnuCOBOL no .zshrc..."
-
+          # --- Garantir que o PATH do Nix não seja quebrado ---
+          if ! grep -q "NIX_PROFILES" "$ZSHRC"; then
             cat << 'EOF' >> "$ZSHRC"
 
-# >>> GnuCOBOL >>>
-export PATH="/usr/bin:$PATH"
-# <<< GnuCOBOL <<<
-EOF
+        # --- Nix environment ---
+        if [ -e /etc/profile.d/nix.sh ]; then
+          . /etc/profile.d/nix.sh
+        fi
+        # --- end nix ---
+        EOF
           fi
 
-          # Validação final
-          echo "Validando instalação do COBOL..."
-          cobc -V
-
-          echo "✅ GnuCOBOL configurado com sucesso."
+          # --- Validação do GnuCOBOL ---
+          echo "Validando GnuCOBOL..."
+          if command -v cobc >/dev/null 2>&1; then
+            cobc -V
+            echo "✅ GnuCOBOL disponível no zsh."
+          else
+            echo "❌ cobc NÃO encontrado no PATH"
+            echo "PATH atual:"
+            echo "$PATH"
+            exit 1
+          fi
         '';
+
 
         /**
         bun-setup = ''
